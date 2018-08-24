@@ -13,11 +13,13 @@ defmodule ClocksTest do
         Dispatcher.get_workers()
           |> Enum.map(fn w -> Worker.get_history(w) end)
           |> all_equal
+      assert same_history == true
     end
   end
 
   def all_equal([x | xs]) do
+    IO.inspect x
     Enum.map(xs, fn y -> y == x end)
-      |> Enum.all? 
+      |> Enum.all?
   end
 end

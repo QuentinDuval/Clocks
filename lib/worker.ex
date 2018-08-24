@@ -6,7 +6,7 @@ defmodule Worker do
   end
 
   def get_history(self) do
-    GenServer.call(self, :get_history) 
+    GenServer.call(self, :get_history)
   end
 
   @event_notification_topic "EVENT_NOTIFICATION_QUEUE"
@@ -28,13 +28,11 @@ defmodule Worker do
   end
 
   def handle_call({:add, word}, _from, state) do
-    IO.puts ("ADD " <> inspect(state.name) <> " " <> word)
     event = %Event{name: state.name, clock: state.clock + 1, value: word}
     newState = %{ state |
       clock: state.clock + 1,
       received: [event | state.received]
     }
-    IO.puts ("New State " <> inspect(newState))
     Broker.broadcast(@event_notification_topic, event)
     {:reply, :ok, newState}
   end
@@ -53,7 +51,6 @@ defmodule Worker do
         clock: max(state.clock, event.clock) + 1,
         received: [event | state.received]
       }
-      IO.puts ("New State " <> inspect(newState))
       {:noreply, newState }
     end
   end

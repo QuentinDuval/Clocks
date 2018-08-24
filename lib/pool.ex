@@ -5,7 +5,7 @@ defmodule Pool do
       {:name, {:local, poolName}},
       {:worker_module, worker_module},
       {:size, size},
-      {:max_overflow, 2}
+      {:max_overflow, 0}
     ]
     children = [ :poolboy.child_spec(poolName, pool_config) ]
     Supervisor.start_link(children, [strategy: :one_for_one])

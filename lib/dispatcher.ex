@@ -14,7 +14,7 @@ defmodule Dispatcher do
     end
 
     def init(monitoring_topic) do
-      Broker.subscribe(monitoring_topic, self())
+      PubSub.subscribe(monitoring_topic, self())
       {:ok, []}
     end
 

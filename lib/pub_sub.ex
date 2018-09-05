@@ -1,4 +1,4 @@
-defmodule Broker do
+defmodule PubSub do
   alias Phoenix.PubSub
 
   def start_link() do

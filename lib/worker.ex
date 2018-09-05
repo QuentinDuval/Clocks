@@ -9,49 +9,53 @@ defmodule Worker do
     GenServer.call(self, :get_history)
   end
 
-  @event_notification_topic "EVENT_NOTIFICATION_QUEUE"
+  @log_replication_topic "EVENT_NOTIFICATION_QUEUE"
 
   defmodule State do
-    defstruct name: nil, clock: 0, received: []
+    defstruct name: nil, clock: 0, eventLog: []
   end
 
-  defmodule Event do
-    defstruct name: nil, clock: 0, value: nil
+  defmodule LogEntry do
+    defstruct name: nil, clock: 0, event: nil
   end
 
   # ----------------------------------------------------------------------------
 
   def init(_) do
-    Broker.subscribe(@event_notification_topic, self())
-    Broker.broadcast(Dispatcher.get_monitoring_topic, {:new_child, self()})
-    {:ok, %State{ name: self(), clock: 1, received: [] }}
+    PubSub.subscribe(@log_replication_topic, self())
+    PubSub.broadcast(Dispatcher.get_monitoring_topic, {:new_child, self()})
+    {:ok, %State{ name: self(), clock: 1, eventLog: [] }}
   end
 
-  def handle_call({:add, word}, _from, state) do
-    event = %Event{name: state.name, clock: state.clock + 1, value: word}
+  def handle_call({:add, event}, _from, state) do
+    logEntry = %LogEntry{
+      name: state.name,
+      clock: state.clock + 1,
+      event: event
+    }
     newState = %{ state |
       clock: state.clock + 1,
-      received: [event | state.received]
+      eventLog: [logEntry | state.eventLog]
     }
-    Broker.broadcast(@event_notification_topic, event)
+    PubSub.broadcast(@log_replication_topic, logEntry)
     {:reply, :ok, newState}
   end
 
   def handle_call(:get_history, _from, state) do
-    sortedReceived = Enum.sort_by(state.received, fn event -> {event.clock, event.name} end)
-    newState = %{ state | received: sortedReceived }
-    {:reply, sortedReceived, newState}
+    sortedLog = Enum.sort_by(state.eventLog, fn event -> {event.clock, event.name} end)
+    newState = %{ state | eventLog: sortedLog }
+    {:reply, sortedLog, newState}
   end
 
-  def handle_info(%Event{} = event, state) do
-    if event.name == state.name do
-      {:noreply, state}
-    else
-      newState = %{ state |
-        clock: max(state.clock, event.clock) + 1,
-        received: [event | state.received]
-      }
-      {:noreply, newState }
-    end
+  def handle_info(%LogEntry{} = logEntry, state) do
+    newState =
+      if logEntry.name == state.name do
+        state
+      else
+        %{ state |
+          clock: max(state.clock, logEntry.clock) + 1,
+          eventLog: [logEntry | state.eventLog] }
+      end
+    {:noreply, newState }
   end
 end

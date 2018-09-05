@@ -16,7 +16,7 @@ defmodule Worker do
   end
 
   defmodule LogEntry do
-    defstruct name: nil, clock: 0, event: nil
+    defstruct origin: nil, time: 0, event: nil
   end
 
   # ----------------------------------------------------------------------------
@@ -29,8 +29,8 @@ defmodule Worker do
 
   def handle_call({:add, event}, _from, state) do
     logEntry = %LogEntry{
-      name: state.name,
-      clock: state.clock + 1,
+      origin: state.name,
+      time: state.clock + 1,
       event: event
     }
     newState = %{ state |
@@ -42,18 +42,18 @@ defmodule Worker do
   end
 
   def handle_call(:get_history, _from, state) do
-    sortedLog = Enum.sort_by(state.eventLog, fn event -> {event.clock, event.name} end)
+    sortedLog = Enum.sort_by(state.eventLog, fn event -> {event.time, event.origin} end)
     newState = %{ state | eventLog: sortedLog }
     {:reply, sortedLog, newState}
   end
 
   def handle_info({:replication_log, logEntry}, state) do
     newState =
-      if logEntry.name == state.name do
+      if logEntry.origin == state.name do
         state
       else
         %{ state |
-          clock: max(state.clock, logEntry.clock) + 1,
+          clock: max(state.clock, logEntry.time) + 1,
           eventLog: [logEntry | state.eventLog] }
       end
     {:noreply, newState }

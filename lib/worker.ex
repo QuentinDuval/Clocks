@@ -37,7 +37,7 @@ defmodule Worker do
       clock: state.clock + 1,
       eventLog: [logEntry | state.eventLog]
     }
-    PubSub.broadcast(@log_replication_topic, logEntry)
+    PubSub.broadcast(@log_replication_topic, {:replication_log, logEntry})
     {:reply, :ok, newState}
   end
 
@@ -47,7 +47,7 @@ defmodule Worker do
     {:reply, sortedLog, newState}
   end
 
-  def handle_info(%LogEntry{} = logEntry, state) do
+  def handle_info({:replication_log, logEntry}, state) do
     newState =
       if logEntry.name == state.name do
         state

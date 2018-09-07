@@ -27,35 +27,35 @@ defmodule Worker do
     {:ok, %State{ name: self(), clock: 1, eventLog: [] }}
   end
 
-  def handle_call({:add, event}, _from, state) do
+  def handle_call({:add, event}, _from, worker) do
     logEntry = %LogEntry{
-      origin: state.name,
-      time: state.clock + 1,
+      origin: worker.name,
+      time: worker.clock,
       event: event
     }
-    newState = %{ state |
-      clock: state.clock + 1,
-      eventLog: [logEntry | state.eventLog]
+    newWorkerState = %{ worker |
+      clock: worker.clock + 1,
+      eventLog: [logEntry | worker.eventLog]
     }
     PubSub.broadcast(@log_replication_topic, {:replication_log, logEntry})
-    {:reply, :ok, newState}
+    {:reply, :ok, newWorkerState}
   end
 
-  def handle_call(:get_history, _from, state) do
-    sortedLog = Enum.sort_by(state.eventLog, fn event -> {event.time, event.origin} end)
-    newState = %{ state | eventLog: sortedLog }
+  def handle_call(:get_history, _from, worker) do
+    sortedLog = Enum.sort_by(worker.eventLog, fn event -> {event.time, event.origin} end)
+    newState = %{ worker | eventLog: sortedLog }
     {:reply, sortedLog, newState}
   end
 
-  def handle_info({:replication_log, logEntry}, state) do
-    newState =
-      if logEntry.origin == state.name do
-        state
+  def handle_info({:replication_log, logEntry}, worker) do
+    newWorkerState =
+      if logEntry.origin == worker.name do
+        worker
       else
-        %{ state |
-          clock: max(state.clock, logEntry.time) + 1,
-          eventLog: [logEntry | state.eventLog] }
+        %{ worker |
+          clock: max(worker.clock, logEntry.time) + 1,
+          eventLog: [logEntry | worker.eventLog] }
       end
-    {:noreply, newState }
+    {:noreply, newWorkerState }
   end
 end

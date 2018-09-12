@@ -1,21 +1,7 @@
 # Clocks
 
-**TODO: Add description**
+A stupid experiment in which we use Lamport timestamp's algorithm to random shuffle a sentence.
 
-## Installation
+We build a in-memory data store where every node support insertions in a distributed fashion. Nodes accept insertions and replicate their logs via a pub/sub messaging infrastructure.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `clocks` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:clocks, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/clocks](https://hexdocs.pm/clocks).
-
+Lamport timestamp's algorithm allows all our nodes to eventually agree, in a distrubuted fashion, on the order of insertions. All nodes therefore agree on a random shuffling of the words inserted in the system.
